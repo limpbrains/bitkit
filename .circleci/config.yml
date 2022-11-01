@@ -18,6 +18,7 @@ commands:
           paths:
             - ios/build/Build
 
+
 jobs:
   detox_ios:
     executor:
