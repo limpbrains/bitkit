@@ -18,12 +18,11 @@ commands:
           paths:
             - ios/build/Build
 
-
 jobs:
   detox_ios:
     executor:
       name: rn/macos
-      xcode_version: 12.5.1
+      xcode_version: 14.0.1
     steps:
       - checkout
       - rn/setup_macos_executor
