@@ -14,14 +14,6 @@ import {
 	Image,
 } from 'react-native';
 import * as bip39 from 'bip39';
-import {
-	Canvas,
-	RadialGradient,
-	Rect,
-	runTiming,
-	useValue,
-	vec,
-} from '@shopify/react-native-skia';
 import rnAndroidKeyboardAdjust from 'rn-android-keyboard-adjust';
 
 import { Display, Text01S } from '../../styles/components';
@@ -38,26 +30,6 @@ import LoadingWalletScreen from './Loading';
 import NavigationHeader from '../../components/NavigationHeader';
 import { updateUser, verifyBackup } from '../../store/actions/user';
 import { showErrorNotification } from '../../utils/notifications';
-
-const Glow = ({ color }: { color: string }): ReactElement => {
-	const opacity = useValue(0);
-
-	useEffect(() => {
-		runTiming(opacity, 0.4, { duration: 300 });
-	}, [opacity]);
-
-	return (
-		<Canvas style={styles.canvas}>
-			<Rect x={0} y={0} width={400} height={400} opacity={opacity}>
-				<RadialGradient
-					c={vec(200, 200)}
-					r={200}
-					colors={[color, 'transparent']}
-				/>
-			</Rect>
-		</Canvas>
-	);
-};
 
 const RestoreFromSeed = (): ReactElement => {
 	const numberOfWords = 12;
@@ -196,7 +168,6 @@ const RestoreFromSeed = (): ReactElement => {
 
 					<View style={styles.imageContainer} pointerEvents="none">
 						<View style={styles.canvasContainer}>
-							<Glow color={red} />
 						</View>
 						<Image
 							style={styles.image}

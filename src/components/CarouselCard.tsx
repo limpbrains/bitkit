@@ -1,28 +1,11 @@
 import React, { memo, ReactElement, useMemo } from 'react';
 import { LayoutAnimation, StyleSheet, Image, View } from 'react-native';
-import { Canvas, RadialGradient, Rect, vec } from '@shopify/react-native-skia';
 
 import { Caption13M, Pressable, Text01M, XIcon } from '../styles/components';
 import Card from './Card';
 import BitcoinLogo from '../assets/bitcoin-logo.svg';
 import { dismissTodo } from '../store/actions/todos';
 import useColors from '../hooks/colors';
-
-const Glow = memo(({ color }: { color: string }): ReactElement => {
-	return (
-		<Rect x={0} y={0} width={160} height={160} opacity={0.3}>
-			<RadialGradient c={vec(0, 0)} r={250} colors={[color, 'black']} />
-		</Rect>
-	);
-});
-
-const InnerShadow = memo(({ color }: { color: string }): ReactElement => {
-	return (
-		<Rect x={0} y={0} width={160} height={160} opacity={0.3} color={color}>
-			<RadialGradient c={vec(80, 80)} r={110} colors={['black', color]} />
-		</Rect>
-	);
-});
 
 const CarouselCard = ({
 	id = '',
@@ -117,9 +100,6 @@ const CarouselCard = ({
 
 	return (
 		<Card style={containerStyle}>
-			<Canvas style={styles.canvas}>
-				{inverted ? <InnerShadow color={color} /> : <Glow color={color} />}
-			</Canvas>
 			<Pressable onPress={onPress} color="transparent" style={styles.pressable}>
 				<View style={styles.iconContainer}>{icon}</View>
 				<View>

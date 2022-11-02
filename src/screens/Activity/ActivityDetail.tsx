@@ -13,14 +13,6 @@ import {
 	View,
 	TouchableOpacity,
 } from 'react-native';
-import {
-	Canvas,
-	Path,
-	RadialGradient,
-	Rect,
-	Skia,
-	vec,
-} from '@shopify/react-native-skia';
 import { useSelector } from 'react-redux';
 import type { StackScreenProps } from '@react-navigation/stack';
 import Clipboard from '@react-native-clipboard/clipboard';
@@ -92,34 +84,6 @@ const Section = memo(
 	},
 );
 
-const Glow = ({
-	color,
-	size,
-}: {
-	color: string;
-	size: { width: number; height: number };
-}): ReactElement => {
-	return (
-		<Rect x={0} y={0} width={size.width} height={size.height} opacity={0.3}>
-			<RadialGradient c={vec(0, 100)} r={600} colors={[color, 'transparent']} />
-		</Rect>
-	);
-};
-
-const ZigZag = ({ color }): ReactElement => {
-	const step = 12;
-	let n = 0;
-	const path = Skia.Path.Make();
-	path.moveTo(0, 0);
-	do {
-		path.lineTo((n + 1) * step, step);
-		path.lineTo((n + 2) * step, 0);
-		n += 2;
-	} while (n < 100);
-	path.close();
-
-	return <Path path={path} color={color} />;
-};
 
 type Props = StackScreenProps<RootStackParamList, 'ActivityDetail'>;
 
@@ -338,9 +302,6 @@ const ActivityDetail = (props: Props): ReactElement => {
 
 	return (
 		<SafeAreaView onLayout={handleLayout}>
-			<Canvas style={[styles.canvas, size]}>
-				<Glow color={glowColor} size={size} />
-			</Canvas>
 			<NavigationHeader title={title} onClosePress={navigation.popToTop} />
 			<ScrollView
 				contentContainerStyle={styles.scrollContent}
@@ -469,10 +430,6 @@ const ActivityDetail = (props: Props): ReactElement => {
 									NOTE
 								</Caption13M>
 								<ThemedView color="gray5">
-									<Canvas style={styles.zRoot}>
-										<ZigZag color={colors.background} />
-									</Canvas>
-
 									<View style={styles.note}>
 										<Title>{message}</Title>
 									</View>

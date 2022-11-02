@@ -15,15 +15,6 @@ import {
 	TouchableOpacity,
 } from 'react-native';
 import Animated, { EasingNode, FadeIn, FadeOut } from 'react-native-reanimated';
-import {
-	Canvas,
-	RadialGradient,
-	Rect,
-	rect,
-	useCanvas,
-	useComputedValue,
-	vec,
-} from '@shopify/react-native-skia';
 import { useSelector } from 'react-redux';
 
 import { AnimatedView, Title, View } from '../../../styles/components';
@@ -62,23 +53,6 @@ type GlowProps = {
 	colors: IColors;
 };
 
-const Glow = ({ colors }: GlowProps): ReactElement => {
-	const { size } = useCanvas();
-	const rct = useComputedValue(
-		() => rect(0, 0, size.current.width, size.current.height),
-		[size],
-	);
-
-	return (
-		<Rect rect={rct}>
-			<RadialGradient
-				c={vec(-450, 0)}
-				r={Platform.OS === 'ios' ? 1050 : 900}
-				colors={[colors.brand, 'transparent']}
-			/>
-		</Rect>
-	);
-};
 
 const WalletsDetail = ({
 	route,
@@ -155,9 +129,6 @@ const WalletsDetail = ({
 			</View>
 			<View color="transparent" style={styles.radiusContainer}>
 				<BlurView>
-					<Canvas style={styles.glowCanvas}>
-						<Glow colors={colors} />
-					</Canvas>
 					<View
 						style={styles.assetDetailContainer}
 						color="white01"

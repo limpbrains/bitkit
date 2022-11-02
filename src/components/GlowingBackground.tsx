@@ -2,14 +2,6 @@ import React, { memo, ReactElement, useState, useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import { useWindowDimensions } from 'react-native';
 import { useSelector } from 'react-redux';
-import {
-	Canvas,
-	RadialGradient,
-	Rect,
-	runTiming,
-	useValue,
-	vec,
-} from '@shopify/react-native-skia';
 
 import { View } from '../styles/components';
 import Store from '../store/types';
@@ -31,29 +23,7 @@ const Glow = memo(
 		width: number;
 		height: number;
 	}) => {
-		const opacity = useValue(0);
-
-		useEffect(() => {
-			runTiming(opacity, fadeout ? 0 : 1, { duration: DURATION });
-		}, [opacity, fadeout]);
-
-		return (
-			<Rect x={0} y={0} width={width} height={height} opacity={opacity}>
-				{top ? (
-					<RadialGradient
-						c={vec(-270, 100)}
-						r={600}
-						colors={[color, 'transparent']}
-					/>
-				) : (
-					<RadialGradient
-						c={vec(width + 118, height + 61)}
-						r={width}
-						colors={[color, 'transparent']}
-					/>
-				)}
-			</Rect>
-		);
+		return (<></>);
 	},
 );
 
@@ -104,28 +74,6 @@ const GlowingBackground = ({
 	return (
 		<View style={styles.container}>
 			<View style={styles.overlay}>
-				<Canvas style={{ width, height }}>
-					{topLeftItems.map(({ id, color }, index, arr) => (
-						<Glow
-							key={id}
-							top={true}
-							color={color || ''}
-							fadeout={index !== arr.length - 1}
-							width={width}
-							height={height}
-						/>
-					))}
-
-					{bottomRightItems.map(({ id, color }, index, arr) => (
-						<Glow
-							key={id}
-							color={color || ''}
-							fadeout={index !== arr.length - 1}
-							width={width}
-							height={height}
-						/>
-					))}
-				</Canvas>
 			</View>
 			{children}
 		</View>

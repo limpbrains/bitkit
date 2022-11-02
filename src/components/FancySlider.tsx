@@ -7,7 +7,6 @@ import React, {
 	useRef,
 	useState,
 } from 'react';
-import { BlurMask, Canvas, Rect } from '@shopify/react-native-skia';
 import { Animated, PanResponder, StyleSheet, View } from 'react-native';
 import throttle from 'lodash.throttle';
 
@@ -55,28 +54,6 @@ const xToValue = (
 		return 0;
 	}
 	return ((maximumValue - minimumValue) / width) * newX;
-};
-
-const Glow = ({ style, width }): ReactElement => {
-	const colors = useColors();
-	const cStyle = useMemo(
-		() => [style, { width: width + CIRCLE_SIZE * 2, height: CIRCLE_SIZE * 3 }],
-		[width, style],
-	);
-
-	return (
-		<Canvas style={cStyle}>
-			<Rect
-				x={CIRCLE_SIZE}
-				y={CIRCLE_SIZE}
-				width={width}
-				height={CIRCLE_SIZE}
-				opacity={0.4}
-				color={colors.purple}>
-				<BlurMask blur={20} style="normal" />
-			</Rect>
-		</Canvas>
-	);
 };
 
 interface IFancySlider {
@@ -182,7 +159,6 @@ const FancySlider = ({
 
 	return (
 		<View style={styles.root}>
-			<Glow width={containerWidth} style={styles.glow} />
 			<View
 				style={styles.container}
 				onLayout={(e): void => {

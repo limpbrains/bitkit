@@ -37,7 +37,6 @@ import Store from '../store/types';
 import { TViewController } from '../store/types/user';
 import themes from '../styles/themes';
 import { toggleView } from '../store/actions/user';
-import BottomSheetGradient from './BottomSheetGradient';
 import { IColors } from '../styles/colors';
 
 export interface BottomSheetWrapperProps {
@@ -145,12 +144,7 @@ const BottomSheetWrapper = forwardRef(
 
 		const backgroundComponent = useCallback(
 			({ style, ...props }: BottomSheetBackgroundProps) => (
-				<BottomSheetGradient
-					animatedContentHeight={animatedContentHeight}
-					startColor={backgroundStartColor}
-					style={style}
-					{...props}
-				/>
+				<></>
 			),
 			[animatedContentHeight, backgroundStartColor],
 		);

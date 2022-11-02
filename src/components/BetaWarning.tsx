@@ -1,6 +1,5 @@
 import React, { memo, ReactElement, useState } from 'react';
 import { StyleSheet, TouchableOpacity } from 'react-native';
-import { Canvas, LinearGradient, Rect, vec } from '@shopify/react-native-skia';
 import { FadeOut } from 'react-native-reanimated';
 import { useSelector } from 'react-redux';
 
@@ -106,16 +105,6 @@ const BetaSoftware = (): ReactElement => {
 			exiting={FadeOut}
 			style={[styles.root, { borderColor: colors.brand }]}
 			onLayout={handleLayout}>
-			<Canvas style={styles.canvas}>
-				<Rect x={0} y={0} width={width} height={height}>
-					<LinearGradient
-						start={vec(0, 0)}
-						end={vec(0, height)}
-						positions={[0, 1]}
-						colors={['transparent', colors.brand16]}
-					/>
-				</Rect>
-			</Canvas>
 			<Flag text="BETA" style={styles.flag} />
 			<Text01M>Bitkit is beta software.</Text01M>
 			<Caption13M color="brand">
