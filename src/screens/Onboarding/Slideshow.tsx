@@ -25,9 +25,11 @@ import Animated, {
 
 import {
 	AnimatedView,
+	Caption13M,
 	Display,
 	Text01M,
 	Text01S,
+	TouchableOpacity,
 	View as ThemedView,
 } from '../../styles/components';
 import SafeAreaInsets from '../../components/SafeAreaInsets';
@@ -55,7 +57,6 @@ const Slideshow = ({
 }: OnboardingStackScreenProps<'Slideshow'>): ReactElement => {
 	const skipIntro = route.params?.skipIntro ?? false;
 	const ref = useRef<ICarouselInstance | null>(null);
-	const progressValue = useSharedValue<number>(0);
 	const [isCreatingWallet, setIsCreatingWallet] = useState(false);
 	const insets = useSafeAreaInsets();
 	const colors = useColors();
@@ -195,6 +196,9 @@ const Slideshow = ({
 	);
 
 	const [index, setIndex] = useState(skipIntro ? slides.length - 1 : 0);
+	const progressValue = useSharedValue<number>(
+		skipIntro ? slides.length - 1 : 0,
+	);
 
 	// skip button should be visible on all slides, except the last one
 	const skipOpacity = useAnimatedStyle(() => {
@@ -202,6 +206,16 @@ const Slideshow = ({
 			progressValue.value,
 			[0, slides.length - 2, slides.length - 1],
 			[1, 1, 0],
+		);
+		return { opacity };
+	}, [slides.length, progressValue]);
+
+	// Advanced button should be visible only on last slide
+	const advOpacity = useAnimatedStyle(() => {
+		const opacity = interpolate(
+			progressValue.value,
+			[0, slides.length - 2, slides.length - 1],
+			[0, 0, 1],
 		);
 		return { opacity };
 	}, [slides.length, progressValue]);
@@ -231,7 +245,7 @@ const Slideshow = ({
 						ref={ref}
 						loop={false}
 						width={dimensions.width}
-						height={dimensions.height - 50 - insets.bottom}
+						height={dimensions.height - 40 - insets.bottom}
 						data={slides}
 						renderItem={({ index: i }): ReactElement => {
 							const Slide = slides[i].slide;
@@ -255,6 +269,18 @@ const Slideshow = ({
 							);
 						})}
 					</View>
+
+					<AnimatedView style={[styles.adv, advOpacity]}>
+						<TouchableOpacity
+							onPress={(): void => {
+								if (index !== slides.length - 1) {
+									return;
+								}
+								navigation.navigate('Passphrase');
+							}}>
+							<Caption13M color="gray1">Advanced setup</Caption13M>
+						</TouchableOpacity>
+					</AnimatedView>
 
 					<AnimatedView
 						color="transparent"
@@ -372,6 +398,10 @@ const styles = StyleSheet.create({
 		borderRadius: 5,
 		backgroundColor: 'white',
 		flex: 1,
+	},
+	adv: {
+		alignSelf: 'center',
+		marginTop: 16,
 	},
 });
 
