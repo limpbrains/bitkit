@@ -6,6 +6,7 @@ import React, {
 	useRef,
 	useMemo,
 	useEffect,
+	useCallback,
 } from 'react';
 import {
 	Image,
@@ -56,6 +57,7 @@ const Slideshow = ({
 	route,
 }: OnboardingStackScreenProps<'Slideshow'>): ReactElement => {
 	const skipIntro = route.params?.skipIntro ?? false;
+	const bip39Passphrase = route.params?.bip39Passphrase;
 	const ref = useRef<ICarouselInstance | null>(null);
 	const [isCreatingWallet, setIsCreatingWallet] = useState(false);
 	const insets = useSafeAreaInsets();
@@ -72,10 +74,10 @@ const Slideshow = ({
 		[dimensions.width],
 	);
 
-	const onNewWallet = async (): Promise<void> => {
+	const onNewWallet = useCallback(async (): Promise<void> => {
 		setIsCreatingWallet(true);
 		await sleep(500); // wait fot animation to be started
-		const res = await createNewWallet();
+		const res = await createNewWallet({ bip39Passphrase });
 		if (res.isErr()) {
 			setIsCreatingWallet(false);
 			showErrorNotification({
@@ -85,7 +87,7 @@ const Slideshow = ({
 		}
 
 		updateUser({ requiresRemoteRestore: false });
-	};
+	}, [bip39Passphrase]);
 
 	const slides = useMemo(
 		() => [
@@ -230,6 +232,13 @@ const Slideshow = ({
 			ref.current?.scrollTo({ index: slides.length - 1, animated: false });
 		}
 	}, [skipIntro, slides.length, progressValue]);
+
+	useEffect(() => {
+		if (bip39Passphrase === undefined) {
+			return;
+		}
+		onNewWallet();
+	}, [bip39Passphrase, onNewWallet]);
 
 	const glowColor = isCreatingWallet
 		? colors.brand

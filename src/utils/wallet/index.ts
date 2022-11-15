@@ -1964,6 +1964,7 @@ export const formatRbfData = async (
  * @param {number} [addressAmount]
  * @param {number} [changeAddressAmount]
  * @param {string} [mnemonic]
+ * @param {string} [bip39Passphrase]
  * @param {TAddressType} [addressTypes]
  * @return {Promise<Result<IDefaultWallet>>}
  */
@@ -1972,6 +1973,7 @@ export const createDefaultWallet = async ({
 	addressAmount = GENERATE_ADDRESS_AMOUNT,
 	changeAddressAmount = GENERATE_ADDRESS_AMOUNT,
 	mnemonic = '',
+	bip39Passphrase = '',
 	addressTypes,
 	selectedNetwork,
 }: ICreateWallet): Promise<Result<IDefaultWallet>> => {
@@ -1987,28 +1989,29 @@ export const createDefaultWallet = async ({
 			};
 		}
 		const selectedAddressType = getSelectedAddressType({});
-		const getMnemonicPhraseResponse = await getMnemonicPhrase(walletName);
-		let error = true;
-		let data;
-		if (getMnemonicPhraseResponse.isOk()) {
-			error = false;
-			data = getMnemonicPhraseResponse.value;
+
+		if (!bip39Passphrase) {
+			bip39Passphrase = await getBip39Passphrase(walletName);
 		}
+
 		const { wallets } = getStore().wallet;
-		if (!error && data && walletName in wallets && wallets[walletName]?.id) {
+		if (walletName in wallets && wallets[walletName]?.id) {
 			return err(`Wallet ID, "${walletName}" already exists.`);
 		}
 
 		//Generate Mnemonic if none was provided
-		if (mnemonic === '') {
-			mnemonic = validateMnemonic(data) ? data : await generateMnemonic();
-		}
+		// if (mnemonic === '') {
+		// 	mnemonic = validateMnemonic(data) ? data : await generateMnemonic();
+		// }
 		if (!validateMnemonic(mnemonic)) {
 			return err('Invalid Mnemonic');
 		}
 		await setKeychainValue({ key: walletName, value: mnemonic });
+		await setKeychainValue({
+			key: `${walletName}passphrase`,
+			value: bip39Passphrase,
+		});
 
-		const bip39Passphrase = await getBip39Passphrase(walletName);
 		const seed = await bip39.mnemonicToSeed(mnemonic, bip39Passphrase);
 
 		//Generate a set of addresses & changeAddresses for each network.

@@ -27,35 +27,50 @@ import { promiseTimeout } from '../helpers';
 /**
  * Checks if the specified wallet's phrase is saved to storage.
  */
-const checkWalletExists = async (wallet = 'wallet0'): Promise<boolean> => {
-	try {
-		const response = await getMnemonicPhrase(wallet);
-		const mnemonicExists = response.isOk() && !!response.value;
-		const walletExists = getStore()?.wallet?.walletExists;
-		return mnemonicExists && walletExists;
-	} catch (e) {
-		return false;
-	}
-};
+// const checkWalletExists = async (wallet = 'wallet0'): Promise<boolean> => {
+// 	try {
+// 		const response = await getMnemonicPhrase(wallet);
+// 		const mnemonicExists = response.isOk() && !!response.value;
+// 		const walletExists = getStore()?.wallet?.walletExists;
+// 		return mnemonicExists && walletExists;
+// 	} catch (e) {
+// 		return false;
+// 	}
+// };
 
 /**
  * Creates a new wallet from scratch
  * @returns {Promise<Result<string>>}
  */
-export const createNewWallet = async (): Promise<Result<string>> => {
-	//All seeds will get automatically created
-	return await startWalletServices({});
+export const createNewWallet = async ({
+	bip39Passphrase,
+}: {
+	bip39Passphrase?: string;
+}): Promise<Result<string>> => {
+	const mnemonic = await generateMnemonic();
+	if (!mnemonic) {
+		return err('Unable to generate mnemonic.');
+	}
+	const createRes = await createWallet({ mnemonic, bip39Passphrase });
+	if (createRes.isErr()) {
+		return err(createRes.error.message);
+	}
+	await updateWallet({ walletExists: true });
+	return ok('Wallet created');
 };
 
 export const restoreSeed = async ({
 	mnemonic,
+	bip39Passphrase,
 }: {
 	mnemonic: string;
+	bip39Passphrase?: string;
 }): Promise<Result<string>> => {
-	const res = await createWallet({ mnemonic });
+	const res = await createWallet({ mnemonic, bip39Passphrase });
 	if (res.isErr()) {
 		return res;
 	}
+	await updateWallet({ walletExists: true });
 	return ok('Seed restored');
 };
 
@@ -115,15 +130,14 @@ export const startWalletServices = async ({
 				updateUser({ isConnectedToElectrum });
 			}
 
-			const walletExists = await checkWalletExists();
+			const mnemonicResponse = await getMnemonicPhrase();
+			if (mnemonicResponse.isErr()) {
+				return err(mnemonicResponse.error.message);
+			}
+			const mnemonic = mnemonicResponse.value;
 
-			let mnemonic;
+			const walletExists = getStore()?.wallet?.walletExists;
 			if (!walletExists) {
-				// Generate new wallet if none exists
-				mnemonic = await generateMnemonic();
-				if (!mnemonic) {
-					return err('Unable to generate mnemonic.');
-				}
 				const createRes = await createWallet({ mnemonic });
 				if (createRes.isErr()) {
 					return err(createRes.error.message);

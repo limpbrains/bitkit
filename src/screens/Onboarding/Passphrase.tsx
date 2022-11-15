@@ -22,7 +22,7 @@ const imageSrc = require('../../assets/illustrations/padlock2.png');
 const Passphrase = ({
 	navigation,
 }: OnboardingStackScreenProps<'Passphrase'>): ReactElement => {
-	const [passphrase, setPassphrase] = useState<string>('');
+	const [bip39Passphrase, setPassphrase] = useState<string>('');
 
 	const dimensions = useWindowDimensions();
 	const illustrationStyles = useMemo(
@@ -49,7 +49,6 @@ const Passphrase = ({
 						<Flag text="Advanced" style={styles.flag} />
 					</View>
 					<View style={styles.imageContainer}>
-						{/*<Image style={styles.image} source={imageSrc} />*/}
 						<Image style={illustrationStyles} source={imageSrc} />
 					</View>
 					<View style={styles.textContent}>
@@ -63,7 +62,7 @@ const Passphrase = ({
 
 						<TextInput
 							style={styles.input}
-							value={passphrase}
+							value={bip39Passphrase}
 							onChangeText={setPassphrase}
 							returnKeyType="done"
 						/>
@@ -75,7 +74,7 @@ const Passphrase = ({
 							size="large"
 							style={[styles.button, styles.customButton]}
 							onPress={(): void => {
-								navigation.navigate('Slideshow', { passphrase });
+								navigation.navigate('Slideshow', { bip39Passphrase });
 							}}
 						/>
 					</View>

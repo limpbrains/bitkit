@@ -17,7 +17,7 @@ export type OnboardingNavigationProp =
 export type OnboardingStackParamList = {
 	TermsOfUse: undefined;
 	Welcome: undefined;
-	Slideshow: { skipIntro?: boolean; passphrase?: string } | undefined;
+	Slideshow: { skipIntro?: boolean; bip39Passphrase?: string } | undefined;
 	RestoreFromSeed: undefined;
 	Passphrase: undefined;
 };
