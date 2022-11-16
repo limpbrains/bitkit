@@ -26,7 +26,7 @@ const Word = ({
 };
 
 const ConfirmMnemonic = ({ navigation, route }): ReactElement => {
-	const origSeed = route.params.seed;
+	const { seed: origSeed, bip39Passphrase } = route.params;
 	const [seed, setSeed] = useState(Array(origSeed.length).fill(undefined));
 	const [pressed, setPressed] = useState(Array(origSeed.length).fill(false));
 	const shuffled = useMemo(() => shuffleArray(origSeed), [origSeed]);
@@ -125,7 +125,13 @@ const ConfirmMnemonic = ({ navigation, route }): ReactElement => {
 					<Button
 						size="large"
 						text="Continue"
-						onPress={(): void => navigation.navigate('Result')}
+						onPress={(): void => {
+							if (bip39Passphrase) {
+								navigation.navigate('ConfirmPassphrase', { bip39Passphrase });
+							} else {
+								navigation.navigate('Result');
+							}
+						}}
 					/>
 				)}
 			</View>

@@ -25,20 +25,6 @@ import { performFullRestoreFromLatestBackup } from '../../store/actions/backup';
 import { promiseTimeout } from '../helpers';
 
 /**
- * Checks if the specified wallet's phrase is saved to storage.
- */
-// const checkWalletExists = async (wallet = 'wallet0'): Promise<boolean> => {
-// 	try {
-// 		const response = await getMnemonicPhrase(wallet);
-// 		const mnemonicExists = response.isOk() && !!response.value;
-// 		const walletExists = getStore()?.wallet?.walletExists;
-// 		return mnemonicExists && walletExists;
-// 	} catch (e) {
-// 		return false;
-// 	}
-// };
-
-/**
  * Creates a new wallet from scratch
  * @returns {Promise<Result<string>>}
  */

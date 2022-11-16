@@ -562,9 +562,14 @@ export const generateMnemonic = async (strength = 128): Promise<string> => {
  * @param {string} wallet
  * @return {Promise<string>}
  */
-export const getBip39Passphrase = async (wallet = ''): Promise<string> => {
+export const getBip39Passphrase = async (
+	selectedWallet?: string,
+): Promise<string> => {
 	try {
-		const key = `${wallet}passphrase`;
+		if (!selectedWallet) {
+			selectedWallet = getSelectedWallet();
+		}
+		const key = `${selectedWallet}passphrase`;
 		const bip39PassphraseResult = await getKeychainValue({ key });
 		if (!bip39PassphraseResult.error && bip39PassphraseResult.data) {
 			return bip39PassphraseResult.data;
