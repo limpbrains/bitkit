@@ -1,7 +1,12 @@
 import { InteractionManager } from 'react-native';
 import { err, ok, Result } from '@synonymdev/result';
 
-import { generateMnemonic, getMnemonicPhrase, refreshWallet } from '../wallet';
+import {
+	generateMnemonic,
+	getMnemonicPhrase,
+	getBip39Passphrase,
+	refreshWallet,
+} from '../wallet';
 import {
 	createWallet,
 	updateExchangeRates,
@@ -124,7 +129,8 @@ export const startWalletServices = async ({
 
 			const walletExists = getStore()?.wallet?.walletExists;
 			if (!walletExists) {
-				const createRes = await createWallet({ mnemonic });
+				const bip39Passphrase = await getBip39Passphrase();
+				const createRes = await createWallet({ mnemonic, bip39Passphrase });
 				if (createRes.isErr()) {
 					return err(createRes.error.message);
 				}
