@@ -60,10 +60,6 @@ const RestoreFromSeed = (): ReactElement => {
 	);
 
 	const onSeedChange = (index, text): void => {
-		// do nothing if mnemonic is already valid and user now needs to enter passphase
-		if (showPassphrase) {
-			return;
-		}
 		text = text.trim();
 		// detect if user pastes whole seed in first input
 		if (text.split(' ').length === numberOfWords) {

@@ -2003,11 +2003,6 @@ export const createDefaultWallet = async ({
 		if (walletName in wallets && wallets[walletName]?.id) {
 			return err(`Wallet ID, "${walletName}" already exists.`);
 		}
-
-		//Generate Mnemonic if none was provided
-		// if (mnemonic === '') {
-		// 	mnemonic = validateMnemonic(data) ? data : await generateMnemonic();
-		// }
 		if (!validateMnemonic(mnemonic)) {
 			return err('Invalid Mnemonic');
 		}
