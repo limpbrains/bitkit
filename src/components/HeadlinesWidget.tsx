@@ -1,5 +1,5 @@
 import React, { memo, ReactElement, useEffect, useState } from 'react';
-import { Linking, StyleSheet } from 'react-native';
+import { TouchableOpacity, Linking, StyleSheet } from 'react-native';
 import { SlashURL } from '@synonymdev/slashtags-sdk';
 
 import {
@@ -7,25 +7,30 @@ import {
 	Text01M,
 	Caption13M,
 	NewspaperIcon,
-	Text02S,
 	GearIcon,
+	TrashIcon,
 } from '../styles/components';
 import { IWidget } from '../store/types/widgets';
 import { useSlashtagsSDK } from './SlashtagsProvider';
 import { showErrorNotification } from '../utils/notifications';
 import { decodeJSON } from '../utils/slashtags';
-import { TouchableOpacity } from 'react-native-gesture-handler';
 import { navigate } from '../navigation/root/RootNavigator';
 import Button from './Button';
+import Dialog from './Dialog';
+import { deleteWidget } from '../store/actions/widgets';
 
 const HeadlinesWidget = ({
 	url,
 	widget,
+	isEditing = false,
+	onPress,
 }: {
 	url: string;
 	widget: IWidget;
+	isEditing?: boolean;
+	onPress?: () => void;
 }): ReactElement => {
-	const [showButtons, setShowButtons] = useState(false);
+	const [showDialog, setShowDialog] = useState(false);
 	const [article, setArticle] = useState<{
 		title: string;
 		link: string;
@@ -80,16 +85,20 @@ const HeadlinesWidget = ({
 		};
 	}, [sdk, url]);
 
-	const switchShowButtons = (): void => {
-		setShowButtons((b) => !b);
+	const onEdit = (): void => {
+		navigate('WidgetFeedEdit', { url });
+	};
+
+	const onDelete = (): void => {
+		setShowDialog(true);
 	};
 
 	return (
 		<View>
 			<TouchableOpacity
 				style={styles.root}
-				onPress={switchShowButtons}
-				activeOpacity={0.9}>
+				activeOpacity={0.9}
+				onPress={onPress}>
 				<View style={styles.icon}>
 					{<NewspaperIcon width={32} height={32} />}
 				</View>
@@ -110,26 +119,41 @@ const HeadlinesWidget = ({
 							</TouchableOpacity>
 						</View>
 						<View style={styles.authorContainer}>
-							<Text02S style={styles.author} numberOfLines={1}>
+							<Caption13M style={styles.author} color="gray1" numberOfLines={1}>
 								{article?.publisher.title}
-							</Text02S>
+							</Caption13M>
 						</View>
 					</View>
 				</View>
 			</TouchableOpacity>
 
-			{showButtons && (
-				<View style={styles.button}>
+			{isEditing && (
+				<View style={styles.buttonsContainer}>
 					<Button
-						text=""
+						style={styles.deleteButton}
+						icon={<TrashIcon width={20} />}
+						onPress={onDelete}
+					/>
+					<Button
+						style={styles.settingsButton}
 						icon={<GearIcon width={20} />}
-						onPress={(): void => {
-							setTimeout(() => setShowButtons(false), 0);
-							navigate('WidgetFeedEdit', { url });
-						}}
+						onPress={onEdit}
 					/>
 				</View>
 			)}
+			<Dialog
+				visible={showDialog}
+				title="Delete Bitcoin Headlines widget?"
+				description="Are you sure you want to delete Bitcoin Headlines from your widgets?"
+				confirmText="Yes, Delete"
+				onCancel={(): void => {
+					setShowDialog(false);
+				}}
+				onConfirm={(): void => {
+					deleteWidget(url);
+					setShowDialog(false);
+				}}
+			/>
 		</View>
 	);
 };
@@ -143,7 +167,7 @@ const styles = StyleSheet.create({
 		borderBottomWidth: 1,
 	},
 	icon: {
-		marginRight: 8,
+		marginRight: 16,
 		borderRadius: 6.4,
 		overflow: 'hidden',
 		height: 32,
@@ -151,12 +175,10 @@ const styles = StyleSheet.create({
 	},
 	infoContainer: {
 		flex: 1.2,
-		display: 'flex',
 		flexDirection: 'column',
 		justifyContent: 'flex-start',
 	},
 	row: {
-		display: 'flex',
 		alignItems: 'center',
 		flexDirection: 'row',
 	},
@@ -172,14 +194,21 @@ const styles = StyleSheet.create({
 	author: {
 		textAlign: 'right',
 	},
-	button: {
+	buttonsContainer: {
 		position: 'absolute',
-		paddingLeft: 8,
 		right: 0,
 		top: 0,
 		bottom: 1,
-		display: 'flex',
+		flexDirection: 'row',
 		justifyContent: 'center',
+		alignItems: 'center',
+	},
+	deleteButton: {
+		minWidth: 0,
+		marginHorizontal: 8,
+	},
+	settingsButton: {
+		minWidth: 0,
 	},
 });
 

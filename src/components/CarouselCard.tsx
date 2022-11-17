@@ -1,12 +1,19 @@
 import React, { memo, ReactElement, useMemo } from 'react';
-import { LayoutAnimation, StyleSheet, Image, View } from 'react-native';
+import {
+	LayoutAnimation,
+	StyleSheet,
+	Image,
+	View,
+	ImageSourcePropType,
+} from 'react-native';
 import { Canvas, RadialGradient, Rect, vec } from '@shopify/react-native-skia';
 
 import { Caption13M, Pressable, Text01M, XIcon } from '../styles/components';
 import Card from './Card';
-import BitcoinLogo from '../assets/bitcoin-logo.svg';
-import { dismissTodo } from '../store/actions/todos';
+import { removeTodo } from '../store/actions/todos';
 import useColors from '../hooks/colors';
+import { TTodoType } from '../store/types/todos';
+import { IColors } from '../styles/colors';
 
 const Glow = memo(({ color }: { color: string }): ReactElement => {
 	return (
@@ -25,19 +32,23 @@ const InnerShadow = memo(({ color }: { color: string }): ReactElement => {
 });
 
 const CarouselCard = ({
-	id = '',
-	title = '',
-	description = '',
-	onPress = (): null => null,
+	id,
+	title,
+	description,
+	color,
+	image,
+	onPress,
 }: {
-	id: string;
+	id: TTodoType;
 	title: string;
 	description: string;
-	onPress?: Function;
+	color: keyof IColors;
+	image: ImageSourcePropType;
+	onPress: () => void;
 }): ReactElement => {
-	const colors = useColors();
 	LayoutAnimation.easeInEaseOut();
 
+	const colors = useColors();
 	const inverted = id === 'lightningSettingUp';
 
 	const containerStyle = useMemo(
@@ -51,77 +62,19 @@ const CarouselCard = ({
 		[inverted, colors.purple],
 	);
 
-	let icon;
-	let color;
-	switch (id) {
-		case 'lightning':
-		case 'lightningSettingUp':
-			icon = (
-				<Image
-					resizeMode="contain"
-					style={styles.image}
-					source={require('../assets/illustrations/lightning.png')}
-				/>
-			);
-			color = 'purple';
-			break;
-		case 'pin':
-			icon = (
-				<Image
-					resizeMode="contain"
-					style={styles.image}
-					source={require('../assets/illustrations/shield.png')}
-				/>
-			);
-			color = 'green';
-			break;
-		case 'backupSeedPhrase':
-			icon = (
-				<Image
-					resizeMode="contain"
-					style={styles.image}
-					source={require('../assets/illustrations/safe.png')}
-				/>
-			);
-			color = 'blue';
-			break;
-		case 'slashtagsProfile':
-			icon = (
-				<Image
-					resizeMode="contain"
-					style={styles.image}
-					source={require('../assets/illustrations/crown-no-margins.png')}
-				/>
-			);
-			color = 'brand';
-			break;
-		case 'buyBitcoin':
-			icon = (
-				<Image
-					resizeMode="contain"
-					style={styles.image}
-					source={require('../assets/illustrations/b-emboss.png')}
-				/>
-			);
-			color = 'orange';
-			break;
-		default:
-			// TODO: Swap out BitcoinLogo with the relevant image based on the provided id.
-			icon = (
-				<BitcoinLogo viewBox="0 0 70 70" height="32.54px" width="45.52px" />
-			);
-			color = 'brand';
-	}
-
-	color = colors[color] ?? color;
-
 	return (
 		<Card style={containerStyle}>
 			<Canvas style={styles.canvas}>
-				{inverted ? <InnerShadow color={color} /> : <Glow color={color} />}
+				{inverted ? (
+					<InnerShadow color={colors[color]} />
+				) : (
+					<Glow color={colors[color]} />
+				)}
 			</Canvas>
 			<Pressable onPress={onPress} color="transparent" style={styles.pressable}>
-				<View style={styles.iconContainer}>{icon}</View>
+				<View style={styles.iconContainer}>
+					<Image style={styles.image} resizeMode="contain" source={image} />
+				</View>
 				<View>
 					<Text01M>{title}</Text01M>
 					<Caption13M color="lightGray">{description}</Caption13M>
@@ -131,8 +84,10 @@ const CarouselCard = ({
 				<Pressable
 					color="transparent"
 					style={styles.dismiss}
-					onPress={(): any => dismissTodo(id)}>
-					<XIcon width={16} height={16} color="gray1" />
+					onPress={(): void => {
+						removeTodo(id);
+					}}>
+					<XIcon width={18} height={18} color="gray1" />
 				</Pressable>
 			)}
 		</Card>
@@ -145,6 +100,7 @@ const styles = StyleSheet.create({
 		height: 160,
 		borderRadius: 16,
 		paddingHorizontal: 16,
+		paddingBottom: 14,
 		overflow: 'hidden',
 	},
 	pressable: {
@@ -156,8 +112,8 @@ const styles = StyleSheet.create({
 	},
 	dismiss: {
 		position: 'absolute',
-		top: 3,
-		right: 3,
+		top: 0,
+		right: 0,
 		padding: 16,
 	},
 	image: {

@@ -36,7 +36,6 @@ import {
 } from '../../utils/blocktank';
 import { addTodo, removeTodo } from './todos';
 import { showErrorNotification } from '../../utils/notifications';
-import { ITodo } from '../types/todos';
 import { getDisplayValues } from '../../utils/exchange-rate';
 
 const dispatch = getDispatch();
@@ -113,6 +112,7 @@ export const refreshOrder = async (
 				if (finalizeRes.isOk()) {
 					removeTodo('lightning');
 					removeTodo('lightningSettingUp');
+					addTodo('transfer');
 					const getUpdatedOrderRes = await blocktank.getOrder(orderId);
 					if (getUpdatedOrderRes.isErr()) {
 						return err(getUpdatedOrderRes.error.message);
@@ -356,10 +356,6 @@ export const startChannelPurchase = async ({
 		selectedWallet = getSelectedWallet();
 	}
 
-	const nodeId = await getNodeId();
-	if (nodeId.isErr()) {
-		return err('Unable to retrieve Node ID.');
-	}
 	if (!productId) {
 		return err('Unable to retrieve Blocktank product id.');
 	}
@@ -505,13 +501,7 @@ export const confirmChannelPurchase = async ({
 
 	watchOrder(orderId).then();
 	removeTodo('lightning');
-	const todo: ITodo = {
-		id: 'lightningSettingUp',
-		type: 'lightningSettingUp',
-		title: 'Setting Up',
-		description: 'Ready in ±20min',
-	};
-	addTodo(todo);
+	addTodo('lightningSettingUp');
 	refreshWallet({ onchain: true, lightning: false }).then();
 	return ok(broadcastResponse.value);
 };

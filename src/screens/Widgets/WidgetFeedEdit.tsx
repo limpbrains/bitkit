@@ -1,12 +1,11 @@
 import React, { useState, useMemo, useEffect, ReactElement } from 'react';
-import { View, StyleSheet, Image, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
 import { useSelector } from 'react-redux';
 import { SlashURL } from '@synonymdev/slashtags-sdk';
 
 import {
 	ScrollView,
 	View as ThemedView,
-	Text02S,
 	Caption13Up,
 	CubeIcon,
 	NewspaperIcon,
@@ -14,34 +13,36 @@ import {
 	Headline,
 	Text01S,
 	Text02M,
+	Checkmark,
 } from '../../styles/components';
 import NavigationHeader from '../../components/NavigationHeader';
 import Button from '../../components/Button';
 import SafeAreaInsets from '../../components/SafeAreaInsets';
 import Store from '../../store/types';
-import type { RootStackScreenProps } from '../../navigation/types';
 import { IWidget, SlashFeedJSON } from '../../store/types/widgets';
 import { useSlashtagsSDK } from '../../components/SlashtagsProvider';
 import { decodeJSON, readAsDataURL } from '../../utils/slashtags';
 import { showErrorNotification } from '../../utils/notifications';
 import ProfileImage from '../../components/ProfileImage';
-import useColors from '../../hooks/colors';
-import { deleteFeedWidget, setFeedWidget } from '../../store/actions/widgets';
+import { deleteWidget, setFeedWidget } from '../../store/actions/widgets';
 import {
 	decodeWidgetFieldValue,
 	SUPPORTED_FEED_TYPES,
 } from '../../utils/widgets';
-import Glow from '../../components/Glow';
 import Divider from '../../components/Divider';
-
-const imageSrc = require('../../assets/illustrations/hourglass.png');
+import HourglassSpinner from '../../components/HourglassSpinner';
+import { SlashtagURL } from '../../components/SlashtagURL';
+import BitfinexWidget from '../../components/BitfinexWidget';
+import HeadlinesWidget from '../../components/HeadlinesWidget';
+import BlocksWidget from '../../components/BlocksWidget';
+import FeedWidget from '../../components/FeedWidget';
+import type { RootStackScreenProps } from '../../navigation/types';
 
 export const WidgetFeedEdit = ({
 	navigation,
 	route,
 }: RootStackScreenProps<'WidgetFeedEdit'>): ReactElement => {
 	const { url } = route.params;
-	const { white, brand } = useColors();
 	const sdk = useSlashtagsSDK();
 
 	const savedWidget: IWidget | undefined = useSelector((state: Store) => {
@@ -58,16 +59,11 @@ export const WidgetFeedEdit = ({
 		Partial<SlashFeedJSON> & { icon?: string }
 	>(savedWidget?.feed);
 
-	const [selectedField, setSelectedField] =
-		useState<string>(savedSelectedField);
+	const [selectedField, setSelectedField] = useState(savedSelectedField);
 
 	const resolving = useMemo(() => {
 		return !config && !savedWidget;
 	}, [config, savedWidget]);
-
-	const enableSave = useMemo(() => {
-		return selectedField && selectedField !== savedSelectedField;
-	}, [selectedField, savedSelectedField]);
 
 	useEffect(() => {
 		let unmounted = false;
@@ -124,8 +120,11 @@ export const WidgetFeedEdit = ({
 							.catch(noop);
 					});
 
-					// pre-select first option
-					setSelectedField(_config.fields[0].name);
+					if (!savedWidget) {
+						// pre-select first option
+						setSelectedField(_config.fields[0].name);
+					}
+
 					setIsLoading(false);
 				})
 				.catch((e: Error) => {
@@ -154,147 +153,188 @@ export const WidgetFeedEdit = ({
 		return function cleanup() {
 			unmounted = true;
 		};
-	}, [sdk, url]);
+	}, [sdk, url, savedWidget]);
 
-	const save = (): void => {
-		if (config) {
+	const onSave = (): void => {
+		if (config && selectedField !== savedSelectedField) {
 			setFeedWidget(url, {
-				name: config?.name,
-				type: config?.type,
-				description: config?.description,
-				icon: config?.icon,
-				field: config.fields?.filter((f) => f.name === selectedField)[0],
+				name: config.name,
+				type: config.type,
+				description: config.description,
+				icon: config.icon,
+				field: config.fields?.find((f) => f.name === selectedField),
 			} as IWidget['feed']);
 		}
 
 		navigation.navigate('Tabs');
 	};
 
-	const deleteWidget = (): void => {
-		deleteFeedWidget(url);
+	const onDelete = (): void => {
+		deleteWidget(url);
 		navigation.navigate('Tabs');
 	};
 
-	const buttonText = savedSelectedField ? 'Save' : 'Add Widget';
+	const headerTitle = savedSelectedField ? 'Change Widget Feed' : 'Widget Feed';
+	const buttonText = savedSelectedField ? 'Save' : 'Save Widget';
+	const previewWidget = config?.fields && {
+		feed: {
+			name: config.name ?? '',
+			description: config.description ?? '',
+			icon: config.icon ?? '',
+			type: config.type ?? '',
+			field: config.fields.find((f) => f.name === selectedField)!,
+		},
+	};
 
 	return (
 		<ThemedView style={styles.container}>
 			<SafeAreaInsets type="top" />
 			<NavigationHeader
-				title="Widget Feed"
+				title={headerTitle}
 				onClosePress={(): void => {
 					navigation.navigate('Tabs');
 				}}
 			/>
 
 			{resolving ? (
-				<View style={styles.imageContainer} pointerEvents="none">
-					<Glow color="brand" size={600} style={styles.glow} />
-					<Image source={imageSrc} style={styles.image} />
-				</View>
+				<HourglassSpinner />
 			) : (
 				<View style={styles.content}>
 					<View style={styles.header}>
-						<Headline>{config?.name}</Headline>
+						<View style={styles.headerText}>
+							<Headline>{config.name}</Headline>
+							<SlashtagURL style={styles.url} url={url} />
+						</View>
 						<View style={styles.headerImage}>
 							{((): ReactElement => {
 								switch (config.type) {
 									case SUPPORTED_FEED_TYPES.PRICE_FEED:
-										return <ChartLineIcon width={32} height={32} />;
+										return <ChartLineIcon width={64} height={64} />;
 									case SUPPORTED_FEED_TYPES.HEADLINES_FEED:
-										return <NewspaperIcon width={32} height={32} />;
+										return <NewspaperIcon width={64} height={64} />;
 									case SUPPORTED_FEED_TYPES.BLOCKS_FEED:
-										return <CubeIcon width={32} height={32} />;
+										return <CubeIcon width={64} height={64} />;
 									default:
 										return (
-											<ProfileImage url={url} image={config?.icon} size={32} />
+											<ProfileImage url={url} image={config.icon} size={32} />
 										);
 								}
 							})()}
 						</View>
 					</View>
 
-					{config?.description && (
-						<>
-							<Text01S style={styles.description}>{config.description}</Text01S>
-							<Divider />
-						</>
+					{config.description && (
+						<Text01S style={styles.description} color="gray1">
+							{config.description}
+						</Text01S>
 					)}
 
-					{isLoading && (
-						<Text01S color="gray1">Loading widget options...</Text01S>
-					)}
+					{Object.entries(fields).length > 1 && (
+						<ScrollView>
+							{isLoading && (
+								<Text01S style={styles.loading} color="gray1">
+									Loading widget options...
+								</Text01S>
+							)}
 
-					{!isLoading && Object.entries(fields).length > 1 && (
-						<>
-							<Text01S color="gray1" style={styles.explanation}>
-								Select the feed you want this widget to display in your wallet
-								overview.
-							</Text01S>
-							<ScrollView>
-								{Object.values(fields).length === 0 ? (
-									<Text02S color="gray1">No feeds to feature...</Text02S>
-								) : (
-									Object.entries(fields).map(([label, value]) => {
-										return (
-											<Pressable
-												key={label}
-												onPress={(): void => setSelectedField(label)}>
-												<View style={styles.fieldContainer}>
-													<View style={styles.fieldLeftContainer}>
-														{typeof value === 'string' ? (
-															<>
-																<Caption13Up
-																	color="gray1"
-																	style={styles.fieldLabel}>
-																	{label}
-																</Caption13Up>
-																<Text02M style={styles.fieldValue}>
-																	{value}
-																</Text02M>
-															</>
-														) : (
-															<Text01S style={styles.fieldValue}>
+							{!isLoading && (
+								<View style={styles.fields}>
+									{Object.entries(fields).map(([label, value]) => (
+										<Pressable
+											key={label}
+											onPress={(): void => setSelectedField(label)}>
+											<Divider />
+											<View style={styles.fieldContainer}>
+												<View style={styles.fieldLeftContainer}>
+													{typeof value === 'string' ? (
+														<>
+															<Caption13Up
+																color="gray1"
+																style={styles.fieldLabel}>
 																{label}
-															</Text01S>
-														)}
-													</View>
-													<View
-														style={[
-															styles.selectField,
-															selectedField === label && {
-																backgroundColor: brand,
-																borderColor: white,
-															},
-														]}
-													/>
+															</Caption13Up>
+															<Text02M style={styles.fieldValue}>
+																{value}
+															</Text02M>
+														</>
+													) : (
+														<Text01S style={styles.fieldValue}>{label}</Text01S>
+													)}
 												</View>
-												<Divider />
-											</Pressable>
-										);
-									})
-								)}
-							</ScrollView>
-						</>
+												{selectedField === label && (
+													<Checkmark color="brand" height={30} width={30} />
+												)}
+											</View>
+										</Pressable>
+									))}
+								</View>
+							)}
+						</ScrollView>
 					)}
 
-					<View style={styles.buttonsContainer}>
-						{savedSelectedField && (
-							<Button
-								style={styles.deleteButton}
-								text="Delete"
-								size="large"
-								variant="secondary"
-								onPress={deleteWidget}
-							/>
+					<View style={styles.footer}>
+						{previewWidget && (
+							<>
+								<Caption13Up color="gray1" style={styles.fieldLabel}>
+									Widget preview
+								</Caption13Up>
+
+								{((): ReactElement => {
+									switch (config.type) {
+										case SUPPORTED_FEED_TYPES.PRICE_FEED:
+											return (
+												<BitfinexWidget
+													key={url}
+													url={url}
+													widget={previewWidget}
+												/>
+											);
+										case SUPPORTED_FEED_TYPES.HEADLINES_FEED:
+											return (
+												<HeadlinesWidget
+													key={url}
+													url={url}
+													widget={previewWidget}
+												/>
+											);
+										case SUPPORTED_FEED_TYPES.BLOCKS_FEED:
+											return (
+												<BlocksWidget
+													key={url}
+													url={url}
+													widget={previewWidget}
+												/>
+											);
+										default:
+											return (
+												<FeedWidget
+													key={url}
+													url={url}
+													widget={previewWidget}
+												/>
+											);
+									}
+								})()}
+							</>
 						)}
-						<Button
-							style={styles.saveButton}
-							text={buttonText}
-							size="large"
-							disabled={!enableSave}
-							onPress={save}
-						/>
+
+						<View style={styles.buttonsContainer}>
+							{savedSelectedField && (
+								<Button
+									style={styles.deleteButton}
+									text="Delete"
+									size="large"
+									variant="secondary"
+									onPress={onDelete}
+								/>
+							)}
+							<Button
+								style={styles.saveButton}
+								text={buttonText}
+								size="large"
+								onPress={onSave}
+							/>
+						</View>
 					</View>
 				</View>
 			)}
@@ -317,20 +357,25 @@ const styles = StyleSheet.create({
 		justifyContent: 'space-between',
 		marginBottom: 16,
 	},
+	headerText: {},
 	headerImage: {
 		borderRadius: 8,
 		overflow: 'hidden',
 	},
-	description: {},
-	explanation: {
-		marginBottom: 32,
+	url: {
+		marginTop: 8,
 	},
-	saveButton: {
-		flex: 1,
+	description: {
+		fontFamily: 'NHaasGroteskDSW02-55Rg',
+		fontSize: 22,
+		letterSpacing: 0.4,
+		lineHeight: 26,
 	},
-	deleteButton: {
-		flex: 1,
-		marginRight: 16,
+	loading: {
+		marginTop: 16,
+	},
+	fields: {
+		paddingBottom: 16,
 	},
 	fieldContainer: {
 		flexDirection: 'row',
@@ -348,31 +393,21 @@ const styles = StyleSheet.create({
 		flex: 1,
 		paddingRight: 16,
 	},
-	selectField: {
-		width: 32,
-		height: 32,
-		borderRadius: 20,
-		borderColor: '#3A3A3C',
-		borderWidth: 4,
+	footer: {
+		paddingTop: 16,
+		marginTop: 'auto',
 	},
 	buttonsContainer: {
 		paddingTop: 16,
 		flexDirection: 'row',
 		justifyContent: 'space-between',
-		marginTop: 'auto',
 	},
-	imageContainer: {
+	deleteButton: {
 		flex: 1,
-		position: 'relative',
-		justifyContent: 'center',
-		alignItems: 'center',
+		marginRight: 16,
 	},
-	glow: {
-		position: 'absolute',
-	},
-	image: {
-		width: 230,
-		height: 230,
+	saveButton: {
+		flex: 1,
 	},
 });
 

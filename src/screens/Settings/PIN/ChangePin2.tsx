@@ -122,6 +122,7 @@ const ChangePin2 = ({
 
 			<NumberPad
 				style={styles.numberpad}
+				type="simple"
 				onPress={handleOnPress}
 				onRemove={handleOnRemove}
 			/>
@@ -135,7 +136,7 @@ const styles = StyleSheet.create({
 	},
 	text: {
 		alignSelf: 'flex-start',
-		marginHorizontal: 32,
+		marginHorizontal: 16,
 		marginBottom: 32,
 	},
 	wrongPin: {

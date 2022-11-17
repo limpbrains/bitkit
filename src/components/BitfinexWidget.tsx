@@ -88,9 +88,13 @@ const Chart = ({
 const BitfinexWidget = ({
 	url,
 	widget,
+	isEditing = false,
+	onPress,
 }: {
 	url: string;
 	widget: IWidget;
+	isEditing?: boolean;
+	onPress?: () => void;
 }): ReactElement => {
 	const { value, drive } = useFeedWidget({ url, feed: widget.feed });
 	const [pastValues, setPastValues] = useState<number[]>([]);
@@ -138,6 +142,8 @@ const BitfinexWidget = ({
 			name="Bitcoin Price"
 			label={widget.feed.field.name}
 			icon={<ChartLineIcon width={32} height={32} />}
+			isEditing={isEditing}
+			onPress={onPress}
 			middle={<Chart color={change.color} values={pastValues} />}
 			right={
 				<View style={styles.numbers}>

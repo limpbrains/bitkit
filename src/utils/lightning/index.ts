@@ -7,11 +7,13 @@ import lm, {
 	TAccountBackup,
 	TChannel,
 	TChannelManagerPayment,
+	TChannelManagerPaymentSent,
 	TCloseChannelReq,
 	THeader,
 	TInvoice,
 	TPaymentReq,
 	TTransactionData,
+	TTransactionPosition,
 } from '@synonymdev/react-native-ldk';
 import ldk from '@synonymdev/react-native-ldk/dist/ldk';
 import {
@@ -19,9 +21,11 @@ import {
 	getBlockHeader,
 	getBlockHex,
 	getScriptPubKeyHistory,
+	getTransactionMerkle,
 	getTransactions,
 } from '../wallet/electrum';
 import {
+	getBalance,
 	getMnemonicPhrase,
 	getReceiveAddress,
 	getSelectedNetwork,
@@ -34,11 +38,12 @@ import * as bitcoin from 'bitcoinjs-lib';
 import { header as defaultHeader } from '../../store/shapes/wallet';
 import {
 	addLightningPayment,
+	updateClaimableBalance,
 	updateLightningChannels,
 	updateLightningNodeId,
 	updateLightningNodeVersion,
 } from '../../store/actions/lightning';
-import { promiseTimeout, sleep } from '../helpers';
+import { promiseTimeout, reduceValue, sleep } from '../helpers';
 import { broadcastTransaction } from '../wallet/transactions';
 import RNFS from 'react-native-fs';
 import { EmitterSubscription } from 'react-native';
@@ -52,6 +57,7 @@ import {
 import { toggleView } from '../../store/actions/user';
 import { updateSlashPayConfig } from '../slashtags';
 import { sdk } from '../../components/SlashtagsProvider';
+import { showSuccessNotification } from '../notifications';
 
 export const DEFAULT_LIGHTNING_PEERS: IWalletItem<string[]> = {
 	bitcoin: [
@@ -181,6 +187,7 @@ export const setupLdk = async ({
 			getScriptPubKeyHistory,
 			broadcastTransaction: _broadcastTransaction,
 			getTransactionData,
+			getTransactionPosition,
 			network,
 			feeRate: ETransactionDefaults.recommendedBaseFee,
 		});
@@ -341,6 +348,10 @@ export const subscribeToLightningPayments = ({
 	}
 	if (!onChannelSubscription) {
 		onChannelSubscription = ldk.onEvent(EEventTypes.new_channel, () => {
+			showSuccessNotification({
+				title: 'Lightning Channel Opened',
+				message: 'Congrats! A new lightning channel was successfully opened.',
+			});
 			refreshLdk({ selectedWallet, selectedNetwork }).then();
 		});
 	}
@@ -394,6 +405,7 @@ export const refreshLdk = async ({
 			return err(syncRes.error.message);
 		}
 		await updateLightningChannels({ selectedWallet, selectedNetwork });
+		await updateClaimableBalance({ selectedNetwork, selectedWallet });
 		await addPeers({ selectedNetwork, selectedWallet });
 		return ok('');
 	} catch (e) {
@@ -576,6 +588,35 @@ export const getTransactionData = async (
 	} catch {
 		return transactionData;
 	}
+};
+
+/**
+ * Returns the position/index of the provided tx_hash within a block.
+ * @param {string} tx_hash
+ * @param {number} height
+ * @param {TAvailableNetworks} [selectedNetwork]
+ * @returns {Promise<number>}
+ */
+export const getTransactionPosition = async ({
+	tx_hash,
+	height,
+	selectedNetwork,
+}: {
+	tx_hash: string;
+	height: number;
+	selectedNetwork?: TAvailableNetworks;
+}): Promise<TTransactionPosition> => {
+	const response = await getTransactionMerkle({
+		tx_hash,
+		height,
+		selectedNetwork,
+	});
+	// @ts-ignore
+	if (response.error || isNaN(response.data?.pos) || response.data?.pos < 0) {
+		return -1;
+	}
+	// @ts-ignore
+	return response.data.pos;
 };
 
 /**
@@ -874,7 +915,7 @@ export const createPaymentRequest = ldk.createPaymentRequest;
 export const payLightningInvoice = async (
 	invoice: string,
 	sats?: number,
-): Promise<Result<string>> => {
+): Promise<Result<TChannelManagerPaymentSent>> => {
 	try {
 		const addPeersResponse = await addPeers({});
 		if (addPeersResponse.isErr()) {
@@ -887,22 +928,11 @@ export const payLightningInvoice = async (
 			return err(decodedInvoice.error.message);
 		}
 
-		let payResponse: Result<string> | undefined;
-		if (sats) {
-			// @ts-ignore
-			payResponse = await lm.payWithTimeout({
-				paymentRequest: invoice,
-				amountSats: sats,
-			});
-		} else {
-			// @ts-ignore
-			payResponse = await lm.payWithTimeout({
-				paymentRequest: invoice,
-			});
-		}
-		if (!payResponse) {
-			return err('Unable to pay the provided lightning invoice.');
-		}
+		const payResponse = await lm.payWithTimeout({
+			paymentRequest: invoice,
+			amountSats: sats ?? 0,
+			timeout: 30000,
+		});
 		if (payResponse.isErr()) {
 			return err(payResponse.error.message);
 		}
@@ -924,7 +954,7 @@ export const payLightningInvoice = async (
 			txType: EPaymentType.sent,
 			value: -value,
 			confirmed: true,
-			fee: 0,
+			fee: payResponse.value.fee_paid_sat,
 			timestamp: new Date().getTime(),
 		};
 		addActivityItem(activityItem);
@@ -1002,4 +1032,81 @@ export const hasOpenLightningChannels = ({
 
 export const rebroadcastAllKnownTransactions = async (): Promise<any> => {
 	return await lm.rebroadcastAllKnownTransactions();
+};
+
+/**
+ * Returns total reserve balance for all open lightning channels.
+ * @param {string} [selectedWallet]
+ * @param {TAvailableNetworks} [selectedNetwork]
+ * @returns {Promise<number>}
+ */
+export const getLightningReserveBalance = async ({
+	selectedWallet,
+	selectedNetwork,
+}: {
+	selectedWallet?: string;
+	selectedNetwork?: TAvailableNetworks;
+}): Promise<number> => {
+	if (!selectedWallet) {
+		selectedWallet = getSelectedWallet();
+	}
+	if (!selectedNetwork) {
+		selectedNetwork = getSelectedNetwork();
+	}
+	const node = getStore().lightning.nodes[selectedWallet];
+	const openChannelIds = node.openChannelIds[selectedNetwork];
+	const channels = node.channels[selectedNetwork];
+	const openChannels = Object.values(channels).filter((channel) =>
+		openChannelIds.includes(channel.channel_id),
+	);
+	const reserveBalances = reduceValue({
+		arr: openChannels,
+		value: 'unspendable_punishment_reserve',
+	});
+	if (reserveBalances.isErr()) {
+		return 0;
+	}
+	return reserveBalances.value;
+};
+
+/**
+ * Returns the claimable balance for all lightning channels.
+ * @param {boolean} [ignoreOpenChannels]
+ * @param {string} [selectedWallet]
+ * @param {TAvailableNetworks} [selectedNetwork]
+ * @returns {Promise<number>}
+ */
+export const getClaimableBalance = async ({
+	ignoreOpenChannels = true,
+	selectedWallet,
+	selectedNetwork,
+}: {
+	ignoreOpenChannels?: boolean;
+	selectedWallet?: string;
+	selectedNetwork?: TAvailableNetworks;
+}): Promise<number> => {
+	if (!selectedWallet) {
+		selectedWallet = getSelectedWallet();
+	}
+	if (!selectedNetwork) {
+		selectedNetwork = getSelectedNetwork();
+	}
+	const lightningBalance = getBalance({
+		lightning: true,
+		selectedWallet,
+		selectedNetwork,
+		subtractReserveBalance: false,
+	});
+	const claimableBalanceRes = await ldk.claimableBalances(ignoreOpenChannels);
+	if (claimableBalanceRes.isErr()) {
+		return 0;
+	}
+	const claimableBalance = reduceValue({
+		arr: claimableBalanceRes.value,
+		value: 'claimable_amount_satoshis',
+	});
+	if (claimableBalance.isErr()) {
+		return 0;
+	}
+	return Math.abs(lightningBalance.satoshis - claimableBalance.value);
 };

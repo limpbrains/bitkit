@@ -1,20 +1,22 @@
+import { ImageSourcePropType } from 'react-native';
+import { IColors } from '../../styles/colors';
+
 export type TTodoType =
 	| 'backupSeedPhrase'
 	| 'boost'
 	| 'pin'
 	| 'lightning'
 	| 'lightningSettingUp'
+	| 'transfer'
 	| 'slashtagsProfile'
 	| 'buyBitcoin';
 
 export interface ITodo {
-	id: string;
-	type: TTodoType;
+	id: TTodoType;
 	title: string;
 	description: string;
+	color: keyof IColors;
+	image: ImageSourcePropType;
 }
 
-export interface ITodos {
-	todos: ITodo[];
-	dismissedTodos: string[];
-}
+export type ITodos = ITodo[];

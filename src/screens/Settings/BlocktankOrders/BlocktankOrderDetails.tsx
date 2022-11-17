@@ -1,13 +1,15 @@
 import React, { ReactElement, memo, useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import Clipboard from '@react-native-clipboard/clipboard';
 import {
 	StyleSheet,
 	View,
 	ScrollView,
 	TouchableOpacity,
 	ActivityIndicator,
-	Linking,
 	Platform,
 } from 'react-native';
+
 import { version as appVersion } from '../../../../package.json';
 import {
 	Caption13Up,
@@ -18,13 +20,11 @@ import SafeAreaInsets from '../../../components/SafeAreaInsets';
 import Button from '../../../components/Button';
 import NavigationHeader from '../../../components/NavigationHeader';
 import Money from '../../../components/Money';
-import Clipboard from '@react-native-clipboard/clipboard';
 import { showSuccessNotification } from '../../../utils/notifications';
-import { IGetOrderResponse } from '@synonymdev/blocktank-client';
-import { useSelector } from 'react-redux';
 import Store from '../../../store/types';
 import { getBlockExplorerLink } from '../../../utils/wallet/transactions';
 import { openURL } from '../../../utils/helpers';
+import { SettingsScreenProps } from '../../../navigation/types';
 
 const Section = memo(
 	({
@@ -50,12 +50,10 @@ const Section = memo(
 	},
 );
 
-const BlocktankOrderDetails = ({ route }): ReactElement => {
-	const {
-		blocktankOrder,
-	}: {
-		blocktankOrder: IGetOrderResponse;
-	} = route.params;
+const BlocktankOrderDetails = ({
+	route,
+}: SettingsScreenProps<'BlocktankOrderDetails'>): ReactElement => {
+	const { blocktankOrder } = route.params;
 
 	const paidBlocktankOrders = useSelector(
 		(state: Store) => state.blocktank.paidOrders,
@@ -83,7 +81,7 @@ const BlocktankOrderDetails = ({ route }): ReactElement => {
 	return (
 		<ThemedView style={styles.root}>
 			<SafeAreaInsets type="top" />
-			<NavigationHeader title={'Blocktank Order'} />
+			<NavigationHeader title="Blocktank Order" />
 			<ScrollView contentContainerStyle={styles.content}>
 				<View style={styles.sectionTitle}>
 					<Caption13Up color="gray1">BALANCE</Caption13Up>
@@ -186,20 +184,19 @@ const BlocktankOrderDetails = ({ route }): ReactElement => {
 
 				<View style={styles.buttons}>
 					<Button
-						style={styles.button}
 						text="Contact Support"
 						size="large"
 						onPress={(): void => {
-							let mailToStr = `mailto:info@synonym.to?subject=Blocktank Support: ${blocktankOrder._id}&body=Blocktank Order ID: ${blocktankOrder._id}\nPlatform: ${Platform.OS}\nBitkit Version: ${appVersion}`;
+							let mailToStr = `mailto:support@synonym.to?subject=Blocktank Support: ${blocktankOrder._id}&body=Blocktank Order ID: ${blocktankOrder._id}\nPlatform: ${Platform.OS}\nBitkit Version: ${appVersion}`;
 							if (paidOrderTxid) {
 								mailToStr += `\nTransaction ID: ${paidOrderTxid}`;
 							}
-							Linking.openURL(mailToStr).then();
+							openURL(mailToStr).then();
 						}}
 					/>
-					<SafeAreaInsets type="bottom" />
 				</View>
 			</ScrollView>
+			<SafeAreaInsets type="bottom" />
 		</ThemedView>
 	);
 };
@@ -207,18 +204,11 @@ const BlocktankOrderDetails = ({ route }): ReactElement => {
 const styles = StyleSheet.create({
 	root: {
 		flex: 1,
-		justifyContent: 'space-between',
+		paddingBottom: 16,
 	},
 	content: {
 		paddingHorizontal: 16,
 		flexGrow: 1,
-	},
-	buttons: {
-		flex: 1,
-		justifyContent: 'flex-end',
-	},
-	button: {
-		marginTop: 8,
 	},
 	sectionTitle: {
 		height: 50,
@@ -242,6 +232,11 @@ const styles = StyleSheet.create({
 		flex: 1.5,
 		alignItems: 'flex-end',
 		justifyContent: 'center',
+	},
+	buttons: {
+		flex: 1,
+		justifyContent: 'flex-end',
+		marginTop: 16,
 	},
 });
 

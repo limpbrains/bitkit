@@ -1,5 +1,5 @@
 import React, { ReactElement, useMemo, useState } from 'react';
-import { Alert, Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSelector } from 'react-redux';
 import { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -79,15 +79,6 @@ const QuickConfirm = ({
 	const savingsPercentage = Math.round((savingsAmount / total) * 100);
 
 	const handleConfirm = async (): Promise<void> => {
-		if (Platform.OS === 'ios') {
-			setLoading(false);
-			Alert.alert(
-				'Temporarily Unavailable',
-				'Instant payment features are being rebuilt and will be back soon!',
-				[{ text: 'Okay', onPress: () => navigation.navigate('Tabs') }],
-			);
-			return;
-		}
 		setLoading(true);
 		await sleep(5);
 		const res = await confirmChannelPurchase({ orderId, selectedNetwork });
@@ -191,10 +182,10 @@ const QuickConfirm = ({
 const styles = StyleSheet.create({
 	root: {
 		flex: 1,
-		display: 'flex',
 		justifyContent: 'space-between',
 		marginTop: 8,
 		paddingHorizontal: 16,
+		paddingBottom: 16,
 	},
 	text: {
 		marginTop: 8,

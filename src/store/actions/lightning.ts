@@ -8,6 +8,7 @@ import { TAvailableNetworks } from '../../utils/networks';
 import {
 	addPeers,
 	createPaymentRequest,
+	getClaimableBalance,
 	getCustomLightningPeers,
 	getLightningChannels,
 	getNodeIdFromStorage,
@@ -20,7 +21,6 @@ import {
 	TCreateLightningInvoice,
 	TLightningNodeVersion,
 } from '../types/lightning';
-import { showSuccessNotification } from '../../utils/notifications';
 
 const dispatch = getDispatch();
 
@@ -82,8 +82,6 @@ export const updateLightningChannels = async ({
 	if (!selectedWallet) {
 		selectedWallet = getSelectedWallet();
 	}
-	const oldOpenChannelIds =
-		getStore().lightning.nodes[selectedWallet].openChannelIds[selectedNetwork];
 	const lightningChannels = await getLightningChannels();
 	if (lightningChannels.isErr()) {
 		return err(lightningChannels.error.message);
@@ -99,13 +97,6 @@ export const updateLightningChannels = async ({
 			}
 		}),
 	);
-	// TODO: Remove this once listeners are added in the next react-native-ldk version.
-	if (oldOpenChannelIds.length < openChannelIds.length) {
-		showSuccessNotification({
-			title: 'Lightning Channel Opened',
-			message: 'Congrats! A new lightning channel was successfully opened.',
-		});
-	}
 	const payload = {
 		channels,
 		openChannelIds,
@@ -415,4 +406,36 @@ export const savePeer = ({
 		payload,
 	});
 	return ok('Successfully Saved Lightning Peer.');
+};
+
+export const updateClaimableBalance = async ({
+	selectedWallet,
+	selectedNetwork,
+}: {
+	selectedWallet?: string;
+	selectedNetwork?: TAvailableNetworks;
+}): Promise<Result<string>> => {
+	if (!selectedWallet) {
+		selectedWallet = getSelectedWallet();
+	}
+	if (!selectedNetwork) {
+		selectedNetwork = getSelectedNetwork();
+	}
+
+	const claimableBalance = await getClaimableBalance({
+		selectedNetwork,
+		selectedWallet,
+	});
+
+	const payload = {
+		selectedNetwork,
+		selectedWallet,
+		claimableBalance,
+	};
+
+	dispatch({
+		type: actions.UPDATE_CLAIMABLE_BALANCE,
+		payload,
+	});
+	return ok('Successfully Updated Claimable Balance.');
 };
