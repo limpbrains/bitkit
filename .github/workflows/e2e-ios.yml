@@ -25,16 +25,16 @@ jobs:
       # - name: Xcode
       #   uses: devbotsxyz/xcode-select@v1
 
-      - name: Install SSH key
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.TEST_USER_SSH_KEY }}
-          known_hosts: ${{ secrets.TEST_USER_KNOWN_HOSTS }}
+      # - name: Install SSH key
+      #   uses: shimataro/ssh-key-action@v2
+      #   with:
+      #     key: ${{ secrets.TEST_USER_SSH_KEY }}
+      #     known_hosts: ${{ secrets.TEST_USER_KNOWN_HOSTS }}
 
-      - name: Use NPM Token with organization read access
-        uses: dkershner6/use-npm-token-action@v1
-        with:
-          token: '${{ secrets.NPMJS_READ }}'
+      # - name: Use NPM Token with organization read access
+      #   uses: dkershner6/use-npm-token-action@v1
+      #   with:
+      #     token: '${{ secrets.NPMJS_READ }}'
 
       - name: Node
         uses: actions/setup-node@v3
